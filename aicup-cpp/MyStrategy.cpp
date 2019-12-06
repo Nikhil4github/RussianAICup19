@@ -130,7 +130,7 @@ UnitAction MyStrategy::getAction(const Unit &unit, const Game &game,
 			nearestEnemy->position.y == unit.position.y){
 		reload = false;
 		plantMine = true;
-		// Decide where to go after planting the mine.
+		//TODO:: Decide where to go after planting the mine.
 	}
 
 	velocity = targetPos.x - unit.position.x;
