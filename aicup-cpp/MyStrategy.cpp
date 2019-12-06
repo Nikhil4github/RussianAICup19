@@ -19,43 +19,15 @@ UnitAction MyStrategy::getAction(const Unit &unit, const Game &game,
 	double velocity; 
 	int health_limit = 70;
 
-	// Locate the nearest Pistol, Launcher, AR.
+	// Locate the nearest weapon.
 	const LootBox *nearestWeapon = nullptr;
-	const LootBox *nearestPistol = nullptr;
-	const LootBox *nearestLauncher = nullptr;
-	const LootBox *nearestAR = nullptr;
 	for (const LootBox &lootBox : game.lootBoxes) {
 		if (std::dynamic_pointer_cast<Item::Weapon>(lootBox.item)) {
-			if(lootBox.Weapon.item->weaponType == WeaponType::PISTOL){
-				if (nearestPistol == nullptr ||distanceSqr(unit.position, lootBox.position) <
-					distanceSqr(unit.position, nearestPistol->position)) {
-					nearestPistol = &lootBox;
-				}
-			}
-			else if(lootBox.Weapon.item->weaponType == WeaponType::ROCKET_LAUNCHER){
-				if (nearestLauncher == nullptr ||distanceSqr(unit.position, lootBox.position) <
-					distanceSqr(unit.position, nearestLauncher->position)) {
-					nearestLauncher = &lootBox;
-				}
-			}
-			else{
-				if (nearestAR == nullptr ||distanceSqr(unit.position, lootBox.position) <
-					distanceSqr(unit.position, nearestAR->position)) {
-					nearestAR = &lootBox;
-				}
+			if (nearestWeapon == nullptr ||distanceSqr(unit.position, lootBox.position) <
+				distanceSqr(unit.position, nearestWeapon->position)) {
+				nearestWeapon = &lootBox;
 			}
 		}
-	}
-
-	// Locate the nearest Weapon.
-	nearestWeapon = nearestAR;
-	if (distanceSqr(unit.position, nearestLauncher->position) <
-		distanceSqr(unit.position, nearestWeapon->position)) {
-		nearestWeapon = nearestLauncher;
-	}
-	if (distanceSqr(unit.position, nearestPistol->position) <
-		distanceSqr(unit.position, nearestWeapon->position)) {
-		nearestWeapon = nearestPistol;
 	}
 
 	// Locate the nearest enemy.
@@ -86,16 +58,15 @@ UnitAction MyStrategy::getAction(const Unit &unit, const Game &game,
 	if (unit.weapon == nullptr && nearestWeapon != nullptr) {
 		targetPos = nearestWeapon->position;
 	} 
-	// Have a weapon, but not an AR, go to the nearest AR if there is one.
-	else if(unit.weapon != nullptr && nearestAR != nullptr && unit.weapon->typ != WeaponType::ASSAULT_RIFLE){
-		targetPos = nearestAR->position;
+	// Have a weapon, but not an AR, the set swapWeapon to true.
+	else if(unit.weapon != nullptr && unit.weapon->typ != WeaponType::ASSAULT_RIFLE){
 		swapWeapon = true;
 	}
 	// Else go to the nearest enemy.
 	else if (nearestEnemy != nullptr) {
 		targetPos = nearestEnemy->position;
 	}
-	
+
 	// If health is low, go towards a HealthPack. 
 	if(unit.health < health_limit){
 		if(nearestHealthPack != nullptr){
@@ -130,10 +101,10 @@ UnitAction MyStrategy::getAction(const Unit &unit, const Game &game,
 			nearestEnemy->position.y == unit.position.y){
 		reload = false;
 		plantMine = true;
-		//TODO:: Decide where to go after planting the mine.
+		// Decide where to go after planting the mine.
 	}
 
-	velocity = targetPos.x - unit.position.x;
+	velocity = (targetPos.x > unit.position.x)*50 - (targetPos.x < unit.position.x)*50;
 	// Check for obstacles in your aim.
 	shoot = checkforobstacles(unit.position, nearestEnemy->position, game);
 
