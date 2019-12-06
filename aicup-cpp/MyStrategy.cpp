@@ -52,16 +52,30 @@ UnitAction MyStrategy::getAction(const Unit &unit, const Game &game,
 		}
 	}
 
+	// Locate nearest Mine.
+	// TODO:: Avoid Mines!
+	const LootBox *nearestMine = nullptr;
+	for (const LootBox &lootBox : game.lootBoxes) {
+		if (std::dynamic_pointer_cast<Item::Mine>(lootBox.item)) {
+			if (nearestMine == nullptr ||distanceSqr(unit.position, lootBox.position) <
+				distanceSqr(unit.position, nearestMine->position)) {
+				nearestMine = &lootBox;
+			}
+		}
+	}
+
 	// Fix target position.
 	Vec2Double targetPos = nearestWeapon->position;
 	// No weapon, then go to nearest the weapon.
 	if (unit.weapon == nullptr && nearestWeapon != nullptr) {
 		targetPos = nearestWeapon->position;
 	} 
-	// Have a weapon, but not an AR, the set swapWeapon to true.
+	// Have a weapon, but not an AR, then set swapWeapon to true.
 	else if(unit.weapon != nullptr && unit.weapon->typ != WeaponType::ASSAULT_RIFLE){
+		// TODO:: Swap only if you'll get a better weapon!
 		swapWeapon = true;
 	}
+	// Why rush towards the enemy!
 	// Else go to the nearest enemy.
 	else if (nearestEnemy != nullptr) {
 		targetPos = nearestEnemy->position;
@@ -104,16 +118,28 @@ UnitAction MyStrategy::getAction(const Unit &unit, const Game &game,
 		// Decide where to go after planting the mine.
 	}
 
-	velocity = (targetPos.x > unit.position.x)*50 - (targetPos.x < unit.position.x)*50;
 	// Check for obstacles in your aim.
 	shoot = checkforobstacles(unit.position, nearestEnemy->position, game);
 
 	// Reload if you are not shooting or magazine is empty.
 	if(unit.weapon != nullptr){
-		if(!shoot || unit.weapon->magazine == 0){
+		if(!shoot){
 			reload = true;
 		}
+		else if(unit.weapon->magazine == 0){
+			// TODO:: Take Cover.
+			// Try going to the nearest HealthKit if available.
+			if(nearestHealthPack != nullptr){
+				targetPos = nearestHealthPack->position;
+			}
+			// Else try going somewhere else.
+			else if(nearestWeapon != nullptr){
+				targetPos = nearestWeapon->position;
+			}
+		}
 	}
+	// Fix velocity.
+	velocity = (targetPos.x > unit.position.x)*50 - (targetPos.x < unit.position.x)*50;
 
 	UnitAction action;
 	action.velocity = velocity;
